@@ -1,2 +1,5 @@
 venv_eye_tracker/
 dump/
+data/
+models/
+__pycache__/
