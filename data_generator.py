@@ -31,18 +31,19 @@ def run_point_chasing(w=1920, h=1080, s=10, s_2=5, look_ahead_len=20):
     images = []
     for i,(y,x) in enumerate(tqdm(path)):
 
+        # Black background
         img = np.zeros((int(h),int(w),3))
 
-        # Look ahead
+        # *Look ahead* fading trail in red
         for j,(yy,xx) in enumerate(path[i+1:i+look_ahead_len]):
-            img[yy-s_2:yy+s_2,xx-s_2:xx+s_2,:] = 0.99*(1./(j+1))
+            img[yy-s_2:yy+s_2,xx-s_2:xx+s_2,2] = 0.99*(1./(j+1))
 
-        # Generate white dot on black background
+        # Green dot to follow
         img[y-s:y+s,x-s:x+s,1] = 1
 
         cv2.imshow("window", img)
 
-        # Save current 'face state' i.e. camera input
+        # Capture current 'face state' i.e. camera input
         _, img = cam.read()
         images.append(img)
 
@@ -57,6 +58,7 @@ def run_point_chasing(w=1920, h=1080, s=10, s_2=5, look_ahead_len=20):
 def extract_both_eyes(images, resize_to=None):
     combined_eyes = []
     for img in tqdm(images):
+        #TODO this should be batched
         eyes = extract_eyes(img, resize_to=resize_to)
         combined_eyes.append(np.hstack(eyes))
     return combined_eyes
