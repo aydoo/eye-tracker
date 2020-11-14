@@ -25,8 +25,8 @@ class EyeDataset(Dataset):
         for i in instances:
             l = np.genfromtxt(f'{self.root}/labels/{i}.txt', delimiter=',')
             l = torch.tensor(l[:,[1,2]]).float()
-            l[:,0] /= 1920 # TODO this should be done before
-            l[:,1] /= 1080 # TODO this should be done before
+            l[:,0] /= 1920 # so that output is between 0 and 1 and can be used with any screen res
+            l[:,1] /= 1080
             labels[i] = l
         return labels
 
@@ -45,7 +45,7 @@ class EyeDataset(Dataset):
         d.instance = e.instance
         d.frame = e.frame
         d.image = cv2.imread(f'{self.root}/images/{d.instance}/{d.frame}.jpg', cv2.IMREAD_UNCHANGED)
-        d.image = torch.tensor(d.image).permute(2,0,1).float() / 255
+        d.image = torch.tensor(d.image).permute(2,0,1).float()
         # TODO this should already be NCHW and float
         d.label = self.labels[d.instance][int(d.frame)]
 
