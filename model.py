@@ -10,38 +10,36 @@ class EyeNet(nn.Module):
         super().__init__()
 
         self.conv1 = nn.Conv2d(3, 64, 3)
-        self.conv2 = nn.Conv2d(64, 128, 3)
+        self.bn11 = nn.BatchNorm2d(64)
         self.pool1 = nn.MaxPool2d(2)
+        self.conv2 = nn.Conv2d(64, 128, 3)
+        self.bn12 = nn.BatchNorm2d(128)
+        self.pool2 = nn.MaxPool2d(2)
         self.conv3 = nn.Conv2d(128, 256, 3)
+        self.bn13 = nn.BatchNorm2d(256)
 
-        #self.fccat = nn.Linear(128, 64)
-
-        self.fc1 = nn.Linear(256*6*26, 256)
-        self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 2)
+        self.fc1 = nn.Linear(256*1*11, 512)
+        self.bn21 = nn.BatchNorm1d(512)
+        self.fc2 = nn.Linear(512, 256)
+        self.bn22 = nn.BatchNorm1d(256)
+        self.fc3 = nn.Linear(256, 2)
 
     def forward(self, img):
-        batchsize = len(img)
         x = img
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        x = self.bn11(F.relu(self.conv1(x)))
         x = self.pool1(x)
-        x = F.relu(self.conv3(x))
+        x = self.bn12(F.relu(self.conv2(x)))
+        x = self.pool2(x)
+        x = self.bn13(F.relu(self.conv3(x)))
+        x = x.view(-1,256*1*11)
 
-        x = x.view(-1,256*6*26)
-
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-#        x = F.batch_norm(F.relu(self.fc1(x)))
-#        x = F.batch_norm(F.relu(self.fc2(x)))
-#        x = F.batch_norm(F.relu(self.fc3(x)))
+        x = self.bn21(F.relu(self.fc1(x)))
+        x = self.bn22(F.relu(self.fc2(x)))
+        x = self.fc3(x)
 
         return x
 
-
 if __name__ == '__main__':
     m = EyeNet().cuda()
-    x = torch.zeros((100,3,20,30)).cuda()
+    x = torch.zeros((100,3,20,60)).cuda()
     m(x)
-
