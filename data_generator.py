@@ -82,12 +82,12 @@ if __name__ == '__main__':
     print(f'Assumed resolution: {w}x{h}')
     print('-'*40)
 
-    print(f'Running cursor chaser:')
+    print(f'Running cursor chaser...')
     cc = CursorChaser(w=w,h=h)
 
-    print(f'Running cursor chaser:')
+    print(f'Extracting faces...')
     img_shape = (100,100)
     faces, labels = extract_faces(cc.images, cc.cursor_positions, img_shape=img_shape)
 
-    print(f'Saving data to {root}/:')
+    print(f'Saving data to {root}/...')
     save_data(root, instance, faces, labels)
