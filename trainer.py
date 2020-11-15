@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import torch
 import torch.nn as nn
@@ -20,29 +21,31 @@ class EyeNetTrainer():
     def train(self):
         total_loss = []
 
-        for e in range(epochs):
+        for e in range(self.epochs):
+            print(f'Epoch: {e+1}/{self.epochs}')
             loss_sum = 0
-            for d in tqdm(loader):
+            for d in tqdm(self.loader):
                 imgs = d['image'].cuda()
                 labels = d['label'].cuda()
 
                 self.m.net.zero_grad()
                 pred = self.m.net(imgs)
+
                 loss = F.mse_loss(pred, labels)
                 loss.backward()
                 self.m.opt.step()
                 loss_sum += loss
 
-            total_loss.append(loss_sum / len(loader))
-            print(total_loss[-1])
+            total_loss.append(loss_sum / (len(self.loader)*self.loader.batch_size))
+            yield self.m, e, total_loss[-1]
 
 if __name__ == '__main__':
 
-    epochs = 50
-    batch_size = 20
+    epochs = 100
+    batch_size = 32
 
     dataset = EyeDataset('data')
-    loader = DataLoader(dataset, batch_size=batch_size, num_workers=0,
+    loader = DataLoader(dataset, batch_size=batch_size, num_workers=4,
                         shuffle=True, drop_last=True)
 
     m = edict()
@@ -50,7 +53,8 @@ if __name__ == '__main__':
     m.opt = optim.Adam(m.net.parameters(), lr=0.001)
 
     trainer = EyeNetTrainer(m, loader, epochs)
-    trainer.train()
-
-    save_path = f'models/epoch_{epochs}'
-    torch.save(m.net.state_dict(), save_path)
+    for _,epoch, loss in trainer.train():
+        print(f'Loss: {float(loss)}')
+        if (epoch+1) % 10 == 0:
+            save_path = f'models/eyenet/epoch_{epoch}_faces_mark_based'
+            torch.save(m.net.state_dict(), save_path)

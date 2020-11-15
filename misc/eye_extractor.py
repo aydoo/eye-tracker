@@ -30,25 +30,42 @@ def extract_eyes(image, offset=5, resize_to=None):
         return False
 
 
-def extract_face(image, offset=5, resize_to=None):
+# Faster, but boxes are jumpy
+def extract_face_2(image, offset=5, resize_to=None):
     dets = FR.face_locations(image, model='small', number_of_times_to_upsample=0)
     FR.face_locations
     if len(dets) > 0:
         c = dets[0]
-        print(c)
         o = offset
-#        face = image[c[0]-o:c[1]+o,
-#                     c[2]-o:c[3]+o]
         face = image[c[0]:c[2],
                      c[3]:c[1]]
-        print(face.shape)
-#        import matplotlib.pyplot as plt
-#        plt.imshow(face)
-#        plt.show()
 
         if resize_to:
             w,h = resize_to
             face = cv2.resize(face, resize_to)
+
+        return face
+    else:
+        return False
+
+# Slow, but less jumpy. Concludes box from landmarks.
+def extract_face(image, offset=5, resize_to=None):
+    dets = FR.face_landmarks(image, model='large')
+    if len(dets) > 0:
+        c = np.array(dets[0]['chin'])
+        leb = np.array(dets[0]['right_eyebrow'])
+        reb = np.array(dets[0]['right_eyebrow'])
+        merged = np.vstack([c,leb,reb])
+        xmax,ymax = merged.max(axis=0)
+        xmin,ymin = merged.min(axis=0)
+
+        # Extract eyes
+        o = offset
+        face = image[ymin-o:ymax+o,xmin-o:xmax+o]
+
+        if resize_to:
+            w,h = resize_to
+            face = cv2.resize(face, (w,h))
 
         return face
     else:
@@ -61,19 +78,26 @@ if __name__ == '__main__':
         ret, frame = cam.read()
 #        eyes = extract_eyes(frame, resize_to=(30,20))
 #
-#        if eyes != None:
+#        if eyes is not False:
 #            combined_eyes = np.hstack(eyes)
 #            cv2.imshow('frame',combined_eyes)
 #            if cv2.waitKey(1) & 0xFF == ord('q'):
 #                break
 
-        face = extract_face(frame, resize_to=(128,128))
+        face = extract_face2(frame, resize_to=(100,100))
 
-        if face is not None:
-            cv2.imshow('frame', face)
+        if face is not False:
+            cv2.imshow('frame',face)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
+#        face = extract_face(frame, resize_to=(128,128))
+#
+#        if face is not None:
+#            cv2.imshow('frame', face)
+#            if cv2.waitKey(1) & 0xFF == ord('q'):
+#                break
+#
     # When everything done, release the camture
     cam.release()
     cv2.destroyAllWindows()
