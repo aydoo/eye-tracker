@@ -10,9 +10,9 @@ from tqdm import tqdm
 
 class EyeDataset(Dataset):
 
-    def __init__(self, root_path, instances=None):
-        self.root = root_path
-        self.instances = instances if instances else os.listdir(f'{self.root}/images/')
+    def __init__(self, root, instances=None):
+        self.root = root
+        self.instances = instances if instances else os.listdir(f'{self.root}/faces/')
         self.instances = sorted(self.instances)
         self.labels = self.read_labels(self.instances)
         self.index = self.create_index(self.labels)
@@ -44,7 +44,7 @@ class EyeDataset(Dataset):
         d.index = i
         d.instance = e.instance
         d.frame = e.frame
-        d.image = cv2.imread(f'{self.root}/images/{d.instance}/{d.frame}.jpg', cv2.IMREAD_UNCHANGED)
+        d.image = cv2.imread(f'{self.root}/faces/{d.instance}/{d.frame}.jpg', cv2.IMREAD_UNCHANGED)
         d.image = torch.tensor(d.image).permute(2,0,1).float()
         # TODO this should already be NCHW and float
         d.label = self.labels[d.instance][int(d.frame)]
@@ -54,18 +54,37 @@ class EyeDataset(Dataset):
 
 if __name__ == '__main__':
     print('Debug.')
-    import cv2
+#    import cv2
+#
+#    dataset = EyeDataset('data')
+#    loader = DataLoader(dataset, batch_size=1, num_workers=0,
+#                        shuffle=True, drop_last=True)
+#
+#    for d in tqdm(loader):
+#        # First image of batch in CHW format
+#        img = d['image'][0].permute(1,2,0).numpy()
+#        cv2.imshow('frame', img)
+#        if cv2.waitKey(1) & 0xFF == ord('q'):
+#            break
+#
+#    cv2.destroyAllWindows()
+#
+    # Plot label distribution
+    import matplotlib.pyplot as plt
+    from dataset import EyeDataset
+    import numpy as np
 
-    dataset = EyeDataset('data')
-    loader = DataLoader(dataset, batch_size=1, num_workers=0,
-                        shuffle=True, drop_last=True)
+    root = 'data'
+    data = EyeDataset(root=root)
 
-    for d in tqdm(loader):
-        # First image of batch in CHW format
-        img = d['image'][0].permute(1,2,0).numpy()
-        cv2.imshow('frame', img)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    w, h = 1920, 1080
+    x = [d['label'][0]*w for d in data]
+    y = [d['label'][1]*h for d in data]
+    #for d in data:
+    #    x, y = d['label']
+    #    heatmap[x,y] += 1
 
-    cv2.destroyAllWindows()
+    plt.scatter(x, y, alpha=0.2)
+    plt.axis('equal')
+    plt.show()
 
